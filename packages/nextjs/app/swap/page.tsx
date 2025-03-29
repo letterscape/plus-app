@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { ChevronDown, ArrowRight, X, Plus } from "lucide-react";
-import TokenSelector, { TokenInfo } from "~~/components/swap/TokenSelector";
+import TokenSelector, { getTokenBySymbol, TokenInfo } from "~~/components/swap/TokenSelector";
 import { useAccount, useWriteContract } from "wagmi";
 import { useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 import { mul18 } from "~~/components/swap/Utils";
 import { Pool } from "../pool/_components/LiquidityList";
 import { useRouter } from "next/navigation";
+import Decimal from "decimal.js";
 
 type TokenOrder = {
   id: number,
@@ -17,6 +18,10 @@ type TokenOrder = {
 
 export default function Swap() {
   const [pools, setPools] = useState<Pool[]>(() => {
+    const isBrowser = typeof window !== "undefined";
+    if (!isBrowser) {
+      return [];
+    }
     const pools = localStorage.getItem("pools");
     return pools && pools !== "undefined" ? JSON.parse(pools) : [];
   });
@@ -39,10 +44,16 @@ export default function Swap() {
   };
 
   // 处理输入变化
-  const handleInputChange = (setTokens: Function, index: number, field: "token" | "amount", value: string) => {
-    setTokens((tokens: any[]) =>
-      tokens.map((item, i) => (i === index ? { ...item, [field]: value } : item))
-    );
+  const handleInputChange = (setTokens: Function, index: number, field: "token" | "amount", value: string, extra: any) => {
+    setTokens((tokens: TokenOrder[]) => {
+      if (field === 'amount') {
+        const amt = Decimal(value);
+        const weight = Decimal(extra.token?.weight || '0');
+        fromTokens.map(item => item.amount = (amt.mul(weight).div(Decimal(getTokenBySymbol(item.token?.symbol || '')?.weight || 0))).toString());
+        toTokens.map(item => item.amount = (amt.mul(weight).div(Decimal(getTokenBySymbol(item.token?.symbol || '')?.weight || 0))).toString());
+      }
+      return tokens.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+    });
   };
 
   const handleSwap = async () => {
@@ -164,13 +175,13 @@ export default function Swap() {
                 type="number"
                 placeholder="0.0"
                 value={item.amount}
-                onChange={(e) => handleInputChange(setFromTokens, index, "amount", e.target.value)}
+                onChange={(e) => handleInputChange(setFromTokens, index, "amount", e.target.value, item)}
                 className="w-1/2 bg-transparent text-lg font-semibold outline-none"
               />
               {/* <button className="flex iterms-center bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition">
                 {item.token || "select token"} <ChevronDown className="ml-1" />
               </button> */}
-              <TokenSelector selectedToken={item.token} setSelectedToken={(token: any) => handleInputChange(setFromTokens, index, "token", token)} />
+              <TokenSelector selectedToken={item.token} setSelectedToken={(token: any) => handleInputChange(setFromTokens, index, "token", token, null)} />
               {fromTokens.length > 1 && (
                 <button onClick={() => removeToken(setFromTokens, index)} className="ml-2 text-red-500">
                   <X />
@@ -199,13 +210,13 @@ export default function Swap() {
                 type="number"
                 placeholder="0.0"
                 value={item.amount}
-                onChange={(e) => handleInputChange(setToTokens, index, "amount", e.target.value)}
+                onChange={(e) => handleInputChange(setToTokens, index, "amount", e.target.value, item)}
                 className="w-1/2 bg-transparent text-lg font-semibold outline-none"
               />
               {/* <button className="flex items-center bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 transition">
                 {item.token || "select token"} <ChevronDown className="ml-1" />
               </button> */}
-              <TokenSelector selectedToken={item.token} setSelectedToken={(token: any) => handleInputChange(setToTokens, index, "token", token)} />
+              <TokenSelector selectedToken={item.token} setSelectedToken={(token: any) => handleInputChange(setToTokens, index, "token", token, null)} />
               {toTokens.length > 1 && (
                 <button onClick={() => removeToken(setToTokens, index)} className="ml-2 text-red-500">
                   <X />

@@ -1,0 +1,1 @@
+export const SwapContract = '0x63275D081C4A77AE69f76c4952F9747a5559a519';
