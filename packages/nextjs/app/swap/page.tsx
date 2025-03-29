@@ -18,7 +18,7 @@ type TokenOrder = {
 export default function Swap() {
   const [pools, setPools] = useState<Pool[]>(() => {
     const pools = localStorage.getItem("pools");
-    return pools ? JSON.parse(pools) : [];
+    return pools && pools !== "undefined" ? JSON.parse(pools) : [];
   });
 
   const router = useRouter();
