@@ -29,5 +29,9 @@
   },
   "engines": {
     "node": ">=20.18.3"
+  },
+  "dependencies": {
+    "@shadcn/ui": "^0.0.4",
+    "lucide-react": "^0.485.0"
   }
 }
