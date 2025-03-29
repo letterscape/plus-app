@@ -247,6 +247,10 @@ export default function Swap() {
         }
       }
       
+      setTimeout(() => {
+        handleSwap();
+      }, 100);
+      
     } catch (error) {
       console.error("Error processing swap parameters:", error);
     }

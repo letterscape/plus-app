@@ -81,10 +81,7 @@ export default function ChatBubble({ onSwapWithParams }: ChatBubbleProps) {
   const executeSwap = (params: any) => {
     if (onSwapWithParams) {
       console.log("Executing swap with params:", params);
-      // Add a delay to ensure the UI updates before swap execution
-      setTimeout(() => {
-        onSwapWithParams(params);
-      }, 100);
+      onSwapWithParams(params);
     }
   }
 
