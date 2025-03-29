@@ -47,7 +47,7 @@ export default function Swap() {
   const handleInputChange = (setTokens: Function, index: number, field: "token" | "amount", value: string, extra: any) => {
     setTokens((tokens: TokenOrder[]) => {
       if (field === 'amount') {
-        const amt = Decimal(value);
+        const amt = Decimal(value || 0);
         const weight = Decimal(extra.token?.weight || '0');
         fromTokens.map(item => item.amount = (amt.mul(weight).div(Decimal(getTokenBySymbol(item.token?.symbol || '')?.weight || 0))).toString());
         toTokens.map(item => item.amount = (amt.mul(weight).div(Decimal(getTokenBySymbol(item.token?.symbol || '')?.weight || 0))).toString());

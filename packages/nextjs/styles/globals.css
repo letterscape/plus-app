@@ -30,3 +30,11 @@ p {
 .btn.btn-ghost {
   @apply shadow-none;
 }
+
+.bg-btn-swap {
+  background-image: linear-gradient(270deg, #A7ECFF -17.42%, #E8B6FF 109.05%);
+}
+
+.bg-btn-vault-gold {
+  background-image: linear-gradient(270deg, #ffb733 -17.42%, #9f95f0 109.05%);
+}

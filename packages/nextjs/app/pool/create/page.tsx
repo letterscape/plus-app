@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Trash } from "lucide-react";
-import TokenSelector, { TokenInfo } from "~~/components/swap/TokenSelector";
+import TokenSelector, { getTokenBySymbol, TokenInfo } from "~~/components/swap/TokenSelector";
 import { useScaffoldReadContract, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import { ERC20ABI } from "~~/components/swap/Abi";
@@ -10,6 +10,7 @@ import { SwapContract } from "~~/components/swap/Config";
 import { parseEther } from "viem";
 import externalContracts from "~~/contracts/externalContracts";
 import { mul18 } from "~~/components/swap/Utils";
+import Decimal from "decimal.js";
 
 type LiquidityToken = {
   id: number,
@@ -34,11 +35,17 @@ export default function CreateLiquidity() {
     setTokens((tokens: any[]) => (tokens.length > 1 ? tokens.filter((_, i) => i !== index) : tokens));
   };
 
-  const handleInputChange = (setTokens: Function, index: number, field: "token" | "amount", value: string) => {
-    setTokens((tokens: any[]) =>
-      tokens.map((item, i) => (i === index ? { ...item, [field]: value } : item))
-    );
-  };
+  const handleInputChange = (setTokens: Function, index: number, field: "token" | "amount", value: string, extra: any) => {
+      setTokens((tokens: LiquidityToken[]) => {
+        if (field === 'amount') {
+          const amt = Decimal(value || 0);
+          const weight = Decimal(extra.token?.weight || '0');
+          tokensX.map(item => item.amount = (amt.mul(weight).div(Decimal(getTokenBySymbol(item.token?.symbol || '')?.weight || 0))).toString());
+          tokensY.map(item => item.amount = (amt.mul(weight).div(Decimal(getTokenBySymbol(item.token?.symbol || '')?.weight || 0))).toString());
+        }
+        return tokens.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+      });
+    };
 
   // const { data: name } = useScaffoldReadContract({
   //   contractName: "PEPE",
@@ -120,10 +127,10 @@ export default function CreateLiquidity() {
                 type="number"
                 placeholder="0.0"
                 value={item.amount}
-                onChange={(e) => handleInputChange(setTokensX, index, "amount", e.target.value)}
+                onChange={(e) => handleInputChange(setTokensX, index, "amount", e.target.value, item)}
                 className="w-1/2 bg-transparent text-lg font-semibold outline-none"
               />
-              <TokenSelector selectedToken={item.token} setSelectedToken={(token: any) => handleInputChange(setTokensX, index, "token", token)} />
+              <TokenSelector selectedToken={item.token} setSelectedToken={(token: any) => handleInputChange(setTokensX, index, "token", token, null)} />
               {tokensX.length > 1 && (
                 <button
                   onClick={() => removeToken(setTokensX, index)}
@@ -152,10 +159,10 @@ export default function CreateLiquidity() {
                 type="number"
                 placeholder="0.0"
                 value={item.amount}
-                onChange={(e) => handleInputChange(setTokensY, index, "amount", e.target.value)}
+                onChange={(e) => handleInputChange(setTokensY, index, "amount", e.target.value, item)}
                 className="w-1/2 bg-transparent text-lg font-semibold outline-none"
               />
-              <TokenSelector selectedToken={item.token} setSelectedToken={(token: any) => handleInputChange(setTokensY, index, "token", token)} />
+              <TokenSelector selectedToken={item.token} setSelectedToken={(token: any) => handleInputChange(setTokensY, index, "token", token, null)} />
               {tokensX.length > 1 && (
                 <button
                   onClick={() => removeToken(setTokensY, index)}
