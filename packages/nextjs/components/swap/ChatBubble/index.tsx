@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import Decimal from 'decimal.js'
 import { getTokenBySymbol } from '../TokenSelector';
+import { useHeurist } from '~~/hooks/ai/useHeurist';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   id: number;
@@ -10,6 +12,7 @@ interface Message {
   isUser: boolean;
   timestamp: Date;
   swapParams?: any; // Store AI return swap parameters
+  isMarkdown?: boolean;
 }
 
 interface ChatBubbleProps {
@@ -20,6 +23,7 @@ export default function ChatBubble({ onSwapWithParams }: ChatBubbleProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState('')
+  const { fetchHeurist, loading, error } = useHeurist();
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,25 +40,25 @@ export default function ChatBubble({ onSwapWithParams }: ChatBubbleProps) {
     setInputText('')
 
     // Simulate API call to get AI response
-    setTimeout(() => {
+    setTimeout(async () => {
       // Check if message contains swap related keywords
-      if (inputText.toLowerCase().includes('swap') || 
-          inputText.toLowerCase().includes('exchange') ||
-          inputText.toLowerCase().includes('trade')) {
+      if (inputText.toLowerCase().includes('swap') ||
+        inputText.toLowerCase().includes('exchange') ||
+        inputText.toLowerCase().includes('trade')) {
 
         // Extract tokens and amounts from user input
         const inputLower = inputText.toLowerCase();
         let fromToken = '';
         let fromAmount = '';
         let toToken = '';
-        
+
         // Regular expressions to extract token information
         const fromMatch = inputLower.match(/(\d+\.?\d*)\s*([a-z]+)/i);
         if (fromMatch) {
           fromAmount = fromMatch[1];
           fromToken = fromMatch[2].toUpperCase();
         }
-        
+
         // Find "for" and extract the token after it
         const forIndex = inputLower.indexOf(' for ');
         const toIndex = inputLower.indexOf(' to ');
@@ -73,19 +77,19 @@ export default function ChatBubble({ onSwapWithParams }: ChatBubbleProps) {
             toToken = toMatch[0].toUpperCase();
           }
         }
-        
+
         // 使用 swap 页面的 handleInputChange 逻辑计算 toAmount
         const toAmount = (() => {
           if (!fromToken || !toToken || !fromAmount) return '0';
-          
+
           try {
             // 获取代币信息
             const fromTokenInfo = getTokenBySymbol(fromToken);
             const toTokenInfo = getTokenBySymbol(toToken);
-            
+
             // 检查是否能找到代币信息
             if (!fromTokenInfo || !toTokenInfo) return '0';
-            
+
             // 按照 swap 页面实现的方式计算 
             const amt = new Decimal(fromAmount || '0');
             const toWeight = amt.mul(fromTokenInfo.weight).div(Decimal(toTokenInfo.weight) || 0);
@@ -96,7 +100,7 @@ export default function ChatBubble({ onSwapWithParams }: ChatBubbleProps) {
             return '0';
           }
         })();
-        
+
         const mockSwapParams = {
           fromTokens: [
             { token: fromToken, amount: fromAmount }
@@ -105,7 +109,7 @@ export default function ChatBubble({ onSwapWithParams }: ChatBubbleProps) {
             { token: toToken, amount: toAmount }
           ]
         };
-        
+
         // Create AI response with extracted swap parameters
         const aiMessage: Message = {
           id: Date.now() + 1,
@@ -114,19 +118,52 @@ export default function ChatBubble({ onSwapWithParams }: ChatBubbleProps) {
           timestamp: new Date(),
           swapParams: mockSwapParams
         }
-        
+
         setMessages(prev => [...prev, aiMessage])
-      } else {
-        // Regular response
+      } else if (
+        inputText.toLowerCase().includes('deposit') ||
+        inputText.toLowerCase().includes('lp') ||
+        inputText.toLowerCase().includes('liquid')) {
+        // Deposit response
         const aiMessage: Message = {
           id: Date.now() + 1,
-          text: "Mocked AI reply",
+          text: "Deposit Mocked AI reply",
           isUser: false,
           timestamp: new Date()
         }
         setMessages(prev => [...prev, aiMessage])
+      } else {
+        // real ai response
+        if (!process.env.NEXT_PUBLIC_HEURIST_API_KEY) {
+          console.error("Missing API key: Ensure NEXT_PUBLIC_HEURIST_API_KEY is set in your environment variables.");
+          return;
+        }
+        try {
+          const data = await fetchHeurist(inputText);
+          console.log("Response:", data);
+
+          let responseText = data?.response || "No response data";
+
+          const aiMessage: Message = {
+            id: Date.now() + 1,
+            text: responseText,
+            isUser: false,
+            timestamp: new Date(),
+            isMarkdown: true
+          };
+          setMessages(prev => [...prev, aiMessage]);
+        } catch (err) {
+          console.error("API Error:", err);
+          const aiMessage: Message = {
+            id: Date.now() + 1,
+            text: "Sorry, I couldn't fetch the information. Please try again later.",
+            isUser: false,
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, aiMessage]);
+        }
       }
-    }, 1000)
+    }, 100);
   }
 
   const clearMessages = () => {
@@ -144,17 +181,19 @@ export default function ChatBubble({ onSwapWithParams }: ChatBubbleProps) {
   return (
     <>
       {isOpen && (
-        <div className="fixed bottom-20 right-5 w-[450px] max-w-[90vw] h-[450px] max-h-[70vh] bg-white rounded-2xl shadow-lg z-[1000] overflow-hidden flex flex-col animate-[slideIn_0.3s_ease]">
-          <div className="p-4 bg-[#f7f8fa] border-b border-[#e8e8e8] flex justify-between items-center">
+        <div
+          className="fixed bottom-20 right-5 w-[400px] max-w-[90vw] h-[450px] max-h-[70vh] bg-white rounded-2xl shadow-lg z-[1000] overflow-hidden flex flex-col animate-[slideIn_0.3s_ease] resize"
+          style={{ resize: 'both', overflow: 'auto' }}
+        ><div className="p-4 bg-[#f7f8fa] border-b border-[#e8e8e8] flex justify-between items-center">
             <h3 className="m-0 text-base font-semibold text-[#0d111c]">AI Assistant</h3>
             <div className="flex gap-2">
-              <button 
+              <button
                 onClick={clearMessages}
                 className="px-2.5 py-1.5 border-none bg-transparent cursor-pointer text-[#666] rounded-lg transition-colors hover:bg-[rgba(0,0,0,0.05)]"
               >
                 Clear
               </button>
-              <button 
+              <button
                 onClick={() => setIsOpen(false)}
                 className="px-2.5 py-1.5 border-none bg-transparent cursor-pointer text-[#666] rounded-lg transition-colors hover:bg-[rgba(0,0,0,0.05)]"
               >
@@ -162,26 +201,37 @@ export default function ChatBubble({ onSwapWithParams }: ChatBubbleProps) {
               </button>
             </div>
           </div>
-          
+
           <div className="p-4 overflow-y-auto flex-1 flex flex-col gap-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-[#f1f1f1] [&::-webkit-scrollbar-track]:rounded [&::-webkit-scrollbar-thumb]:bg-[#c1c1c1] [&::-webkit-scrollbar-thumb]:rounded hover:[&::-webkit-scrollbar-thumb]:bg-[#a8a8a8]">
             {messages.length > 0 ? (
               messages.map((message) => (
-                <div 
-                  key={message.id} 
-                  className={`mb-3 max-w-[85%] flex flex-col ${
-                    message.isUser ? 'ml-auto items-end' : 'mr-auto items-start'
-                  }`}
+                <div
+                  key={message.id}
+                  className={`mb-3 max-w-[85%] flex flex-col ${message.isUser ? 'ml-auto items-end' : 'mr-auto items-start'
+                    }`}
                 >
-                  <div className={`px-3 py-2 rounded-xl text-sm leading-snug break-words ${
-                    message.isUser 
-                      ? 'bg-[#2172e5] text-white rounded-br-sm' 
+                  <div
+                    className={`px-3 py-2 rounded-xl text-sm leading-snug break-words ${message.isUser
+                      ? 'bg-[#2172e5] text-white rounded-br-sm'
                       : 'bg-[#f0f0f0] text-black rounded-bl-sm'
-                  }`}>
-                    {message.text}
-                    
+                      }`}
+                  >
+                    {message.isMarkdown ? (
+                      <ReactMarkdown
+                        components={{
+                          strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
+                          ul: ({ node, ...props }) => <ul className="list-disc pl-5 my-1" {...props} />,
+                          li: ({ node, ...props }) => <li className="my-1" {...props} />,
+                        }}
+                      >
+                        {message.text}
+                      </ReactMarkdown>
+                    ) : (
+                      message.text
+                    )}
                     {/* Display execute button if message contains swap parameters */}
                     {message.swapParams && (
-                      <button 
+                      <button
                         onClick={() => executeSwap(message.swapParams)}
                         className="mt-2 px-3 py-1 bg-[#2172e5] text-white text-xs rounded-md hover:bg-[#1a5fc7] w-full"
                       >
@@ -209,8 +259,8 @@ export default function ChatBubble({ onSwapWithParams }: ChatBubbleProps) {
               placeholder="Start your chat..."
               className="flex-1 px-3 py-2 border border-[#e8e8e8] rounded-full outline-none text-sm focus:border-[#2172e5]"
             />
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className="px-4 py-2 bg-[#2172e5] text-white border-none rounded-full cursor-pointer text-sm transition-colors hover:bg-[#1a5fc7]"
             >
               Send
@@ -219,7 +269,7 @@ export default function ChatBubble({ onSwapWithParams }: ChatBubbleProps) {
         </div>
       )}
 
-      <button 
+      <button
         className="fixed bottom-5 right-5 w-14 h-14 rounded-full bg-white text-black border-none cursor-pointer shadow-md text-2xl flex items-center justify-center z-[1000] transition-all hover:scale-110 hover:shadow-lg hover:bg-[#f5f5f5] active:scale-95"
         onClick={() => setIsOpen(!isOpen)}
       >
@@ -245,6 +295,7 @@ export default function ChatBubble({ onSwapWithParams }: ChatBubbleProps) {
             right: 5vw;
             left: 5vw;
             bottom: 80px;
+            margin-right: 5;
           }
           .bubble-mobile {
             width: 50px;
