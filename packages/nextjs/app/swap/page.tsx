@@ -9,13 +9,7 @@ import { mul18 } from "~~/components/swap/Utils";
 import { Pool } from "../pool/_components/LiquidityList";
 import { useRouter } from "next/navigation";
 import Decimal from "decimal.js";
-import ChatBubble from "~~/components/swap/ChatBubble"
-
-type TokenOrder = {
-  id: number,
-  token: TokenInfo | null,
-  amount: string,
-}
+import { findPool, TokenOrder } from "~~/utils/swap";
 
 export default function Swap() {
   const [pools, setPools] = useState<Pool[]>(() => {
@@ -68,7 +62,7 @@ export default function Swap() {
     const amountOutsMin = new Array(fromTokens.length).fill(1);
     const deadline = BigInt(Date.now() * 3600 * 1000);
   
-    const pool = findPool(tokensIn, tokensOut);
+    const pool = findPool(tokensIn, tokensOut, pools);
     debugger
     if (!pool) return;
     const groupIn = pool.addressXs.map(address => address || '0');
@@ -80,180 +74,6 @@ export default function Swap() {
     });
     console.log("swap tx: ", tx);
     router.refresh();
-  }
-
-  function findPool(tokensIn: string[], tokensOut: string[]): Pool | null {
-    if (!tokensIn || !tokensOut) return null
-    let pool = null;
-    debugger
-    for (let i = 0; i < pools.length; i++) {
-      let findGroupX = false;
-      let findGroupY = false;
-      const addressXs = pools[i].addressXs;
-      const addressYs = pools[i].addressYs;
-      let count = 0;
-      for (let j = 0; j < tokensIn.length; j++) {
-        for (let k = 0; k < addressXs.length; k++) {
-          if (tokensIn[j] === addressXs[k]) {
-            count++;
-            continue;
-          }
-        }
-        if (count === tokensIn.length) {
-          findGroupX = true;
-          break;
-        }
-      }
-      count = 0;
-      for (let j = 0; j < tokensOut.length; j++) {
-        for (let k = 0; k < addressYs.length; k++) {
-          if (tokensOut[j] === addressYs[k]) {
-            count++;
-            continue;
-          }
-        }
-        if (count === tokensOut.length) {
-          findGroupY = true;
-          break;
-        }
-      }
-      if (findGroupX && findGroupY) {
-        pool = pools[i];
-        console.log("find pool: ", pool);
-        return pool;
-      }
-    }
-    debugger
-    for (let i = 0; i < pools.length; i++) {
-      let findGroupX = false;
-      let findGroupY = false;
-      const addressXs = pools[i].addressXs;
-      const addressYs = pools[i].addressYs;
-      let count = 0;
-      for (let j = 0; j < tokensOut.length; j++) {
-        for (let k = 0; k < addressXs.length; k++) {
-          if (tokensOut[j] === addressXs[k]) {
-            count++;
-            continue;
-          }
-        }
-        if (count === tokensOut.length) {
-          findGroupX = true;
-          break;
-        }
-      }
-      count = 0;
-      for (let j = 0; j < tokensIn.length; j++) {
-        for (let k = 0; k < addressYs.length; k++) {
-          if (tokensIn[j] === addressYs[k]) {
-            count++;
-            continue;
-          }
-        }
-        if (count === tokensIn.length) {
-          findGroupY = true;
-          break;
-        }
-      }
-      if (findGroupX && findGroupY) {
-        pool = pools[i];
-        console.log("find pool: ", pool);
-        return pool;
-      }
-    }
-    return pool;
-  }
-
-  // Update function to handle swap with parameters from AI
-  const handleSwapWithParams = (params: any) => {
-    console.log("Received swap parameters:", params);
-    
-    try {
-      // Validate parameters
-      if (!params || !params.fromTokens || !params.toTokens) {
-        console.error("Invalid swap parameters:", params);
-        return;
-      }
-      
-      // Process from tokens
-      if (params.fromTokens && params.fromTokens.length > 0) {
-        const newFromTokens = [];
-        
-        for (const item of params.fromTokens) {
-          // Find the actual token object
-          const tokenSymbol = item.token;
-          const tokenInfo = getTokenBySymbol(tokenSymbol);
-          
-          if (!tokenInfo) {
-            console.error(`Token not found: ${tokenSymbol}`);
-            continue;
-          }
-          
-          // Ensure amount is a valid number string
-          let amount = "0";
-          if (item.amount && !isNaN(parseFloat(item.amount))) {
-            amount = parseFloat(item.amount).toString();
-          }
-          
-          newFromTokens.push({
-            id: Date.now() + newFromTokens.length,
-            token: tokenInfo,
-            amount: amount
-          });
-        }
-        
-        if (newFromTokens.length > 0) {
-          console.log("Setting fromTokens to:", newFromTokens);
-          setFromTokens(newFromTokens);
-        } else {
-          console.error("No valid from tokens found");
-          return;
-        }
-      }
-      
-      // Process to tokens
-      if (params.toTokens && params.toTokens.length > 0) {
-        const newToTokens = [];
-        
-        for (const item of params.toTokens) {
-          // Find the actual token object
-          const tokenSymbol = item.token;
-          const tokenInfo = getTokenBySymbol(tokenSymbol);
-          
-          if (!tokenInfo) {
-            console.error(`Token not found: ${tokenSymbol}`);
-            continue;
-          }
-          
-          // Ensure amount is a valid number string
-          let amount = "0";
-          if (item.amount && !isNaN(parseFloat(item.amount))) {
-            amount = parseFloat(item.amount).toString();
-          }
-          
-          newToTokens.push({
-            id: Date.now() + 100 + newToTokens.length,
-            token: tokenInfo,
-            amount: amount
-          });
-        }
-        
-        if (newToTokens.length > 0) {
-          console.log("Setting toTokens to:", newToTokens);
-          setToTokens(newToTokens);
-        } else {
-          console.error("No valid to tokens found");
-          return;
-        }
-      }
-      
-      setTimeout(() => {
-        handleSwap();
-      }, 100);
-      
-    } catch (error) {
-      console.error("Error processing swap parameters:", error);
-    }
   }
 
   return (
@@ -336,9 +156,6 @@ export default function Swap() {
       >
         Swap
       </button>
-
-      <ChatBubble onSwapWithParams={handleSwapWithParams} />
-      
     </div>
   );
 }
