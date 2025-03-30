@@ -9,7 +9,6 @@ import { mul18 } from "~~/components/swap/Utils";
 import { Pool } from "../pool/_components/LiquidityList";
 import { useRouter } from "next/navigation";
 import Decimal from "decimal.js";
-import ChatBubble from "~~/components/swap/ChatBubble"
 
 type TokenOrder = {
   id: number,
@@ -336,9 +335,6 @@ export default function Swap() {
       >
         Swap
       </button>
-
-      <ChatBubble onSwapWithParams={handleSwapWithParams} />
-      
     </div>
   );
 }
