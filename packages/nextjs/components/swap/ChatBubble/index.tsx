@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Decimal from 'decimal.js'
+import { getTokenBySymbol } from '../TokenSelector';
 
 interface Message {
   id: number;
@@ -39,21 +41,75 @@ export default function ChatBubble({ onSwapWithParams }: ChatBubbleProps) {
       if (inputText.toLowerCase().includes('swap') || 
           inputText.toLowerCase().includes('exchange') ||
           inputText.toLowerCase().includes('trade')) {
+
+        // Extract tokens and amounts from user input
+        const inputLower = inputText.toLowerCase();
+        let fromToken = '';
+        let fromAmount = '';
+        let toToken = '';
         
-        // Use valid number format
+        // Regular expressions to extract token information
+        const fromMatch = inputLower.match(/(\d+\.?\d*)\s*([a-z]+)/i);
+        if (fromMatch) {
+          fromAmount = fromMatch[1];
+          fromToken = fromMatch[2].toUpperCase();
+        }
+        
+        // Find "for" and extract the token after it
+        const forIndex = inputLower.indexOf(' for ');
+        const toIndex = inputLower.indexOf(' to ');
+        const extractionIndex = forIndex !== -1 ? forIndex : toIndex;
+        if (extractionIndex !== -1) {
+          const afterExtraction = inputLower.substring(extractionIndex + (forIndex !== -1 ? 5 : 4));
+          const toMatch = afterExtraction.match(/([a-z]+)/i);
+          if (toMatch) {
+            toToken = toMatch[0].toUpperCase();
+          }
+        }
+        if (forIndex !== -1) {
+          const afterFor = inputLower.substring(forIndex + 5);
+          const toMatch = afterFor.match(/([a-z]+)/i);
+          if (toMatch) {
+            toToken = toMatch[0].toUpperCase();
+          }
+        }
+        
+        // 使用 swap 页面的 handleInputChange 逻辑计算 toAmount
+        const toAmount = (() => {
+          if (!fromToken || !toToken || !fromAmount) return '0';
+          
+          try {
+            // 获取代币信息
+            const fromTokenInfo = getTokenBySymbol(fromToken);
+            const toTokenInfo = getTokenBySymbol(toToken);
+            
+            // 检查是否能找到代币信息
+            if (!fromTokenInfo || !toTokenInfo) return '0';
+            
+            // 按照 swap 页面实现的方式计算 
+            const amt = new Decimal(fromAmount || '0');
+            const toWeight = amt.mul(fromTokenInfo.weight).div(Decimal(toTokenInfo.weight) || 0);
+            // 完全按照 swap 页面中的算法来计算
+            return toWeight.toString();
+          } catch (error) {
+            console.error("Error calculating swap amount:", error);
+            return '0';
+          }
+        })();
+        
         const mockSwapParams = {
           fromTokens: [
-            { token: 'WETH', amount: '0.1' }
+            { token: fromToken, amount: fromAmount }
           ],
           toTokens: [
-            { token: 'USDT', amount: '200' }
+            { token: toToken, amount: toAmount }
           ]
         };
         
-        // Create AI response with swap parameters
+        // Create AI response with extracted swap parameters
         const aiMessage: Message = {
           id: Date.now() + 1,
-          text: "I recommend swapping 0.1 WETH for approximately 200 USDT based on current rates. Would you like to proceed with this swap?",
+          text: `I recommend swapping ${fromAmount} ${fromToken} for approximately ${toAmount} ${toToken} based on current rates. Would you like to proceed with this swap?`,
           isUser: false,
           timestamp: new Date(),
           swapParams: mockSwapParams
