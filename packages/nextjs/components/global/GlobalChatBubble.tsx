@@ -47,7 +47,7 @@ export default function GlobalChatBubble() {
           continue;
         }
         
-        let amount = "0.1"; // 默认值
+        let amount = "0"; // 默认值
         if (item.amount && !isNaN(parseFloat(item.amount))) {
           amount = parseFloat(item.amount).toString();
         }

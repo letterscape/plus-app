@@ -80,7 +80,7 @@ export default function ChatBubble({ onSwapWithParams }: ChatBubbleProps) {
   // Handle function to execute swap
   const executeSwap = (params: any) => {
     if (onSwapWithParams) {
-      console.log("Executing swap with params:", params);
+      console.log("Starting swap with params:", params);
       onSwapWithParams(params);
     }
   }
