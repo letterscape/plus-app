@@ -9,13 +9,7 @@ import { mul18 } from "~~/components/swap/Utils";
 import { Pool } from "../pool/_components/LiquidityList";
 import { useRouter } from "next/navigation";
 import Decimal from "decimal.js";
-import { findPool } from "~~/utils/swap";
-
-type TokenOrder = {
-  id: number,
-  token: TokenInfo | null,
-  amount: string,
-}
+import { findPool, TokenOrder } from "~~/utils/swap";
 
 export default function Swap() {
   const [pools, setPools] = useState<Pool[]>(() => {

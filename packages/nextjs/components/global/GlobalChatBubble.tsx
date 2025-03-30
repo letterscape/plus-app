@@ -7,13 +7,7 @@ import { mul18 } from "~~/components/swap/Utils";
 import { getTokenBySymbol, TokenInfo } from "~~/components/swap/TokenSelector";
 import { Pool } from "~~/app/pool/_components/LiquidityList";
 import ChatBubble from '~~/components/swap/ChatBubble';
-import { findPool } from '~~/utils/swap';
-
-type TokenOrder = {
-  id: number,
-  token: TokenInfo | null,
-  amount: string,
-}
+import { findPool, TokenOrder } from '~~/utils/swap';
 
 export default function GlobalChatBubble() {
   const [mounted, setMounted] = useState(false);
