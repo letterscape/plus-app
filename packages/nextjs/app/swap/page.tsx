@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ArrowRight, X, Plus } from "lucide-react";
+import { ArrowRight, X, Plus } from "lucide-react";
 import TokenSelector, { getTokenBySymbol, TokenInfo } from "~~/components/swap/TokenSelector";
 import { useAccount, useWriteContract } from "wagmi";
 import { useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
@@ -9,6 +9,7 @@ import { mul18 } from "~~/components/swap/Utils";
 import { Pool } from "../pool/_components/LiquidityList";
 import { useRouter } from "next/navigation";
 import Decimal from "decimal.js";
+import ChatBubble from "~~/components/swap/ChatBubble"
 
 type TokenOrder = {
   id: number,
@@ -32,6 +33,7 @@ export default function Swap() {
   const { writeContractAsync: writeSwapContractAsync } = useScaffoldWriteContract({ contractName: "Swaplus" });
   const [fromTokens, setFromTokens] = useState<TokenOrder[]>([{ id: 1, token: null, amount: "" }]);
   const [toTokens, setToTokens] = useState<TokenOrder[]>([{ id: 1, token: null, amount: "" }]);
+
 
   // 处理 Token 增加
   const addToken = (setTokens: Function) => {
@@ -162,6 +164,98 @@ export default function Swap() {
     return pool;
   }
 
+  // Update function to handle swap with parameters from AI
+  const handleSwapWithParams = (params: any) => {
+    console.log("Received swap parameters:", params);
+    
+    try {
+      // Validate parameters
+      if (!params || !params.fromTokens || !params.toTokens) {
+        console.error("Invalid swap parameters:", params);
+        return;
+      }
+      
+      // Process from tokens
+      if (params.fromTokens && params.fromTokens.length > 0) {
+        const newFromTokens = [];
+        
+        for (const item of params.fromTokens) {
+          // Find the actual token object
+          const tokenSymbol = item.token;
+          const tokenInfo = getTokenBySymbol(tokenSymbol);
+          
+          if (!tokenInfo) {
+            console.error(`Token not found: ${tokenSymbol}`);
+            continue;
+          }
+          
+          // Ensure amount is a valid number string
+          let amount = "0";
+          if (item.amount && !isNaN(parseFloat(item.amount))) {
+            amount = parseFloat(item.amount).toString();
+          }
+          
+          newFromTokens.push({
+            id: Date.now() + newFromTokens.length,
+            token: tokenInfo,
+            amount: amount
+          });
+        }
+        
+        if (newFromTokens.length > 0) {
+          console.log("Setting fromTokens to:", newFromTokens);
+          setFromTokens(newFromTokens);
+        } else {
+          console.error("No valid from tokens found");
+          return;
+        }
+      }
+      
+      // Process to tokens
+      if (params.toTokens && params.toTokens.length > 0) {
+        const newToTokens = [];
+        
+        for (const item of params.toTokens) {
+          // Find the actual token object
+          const tokenSymbol = item.token;
+          const tokenInfo = getTokenBySymbol(tokenSymbol);
+          
+          if (!tokenInfo) {
+            console.error(`Token not found: ${tokenSymbol}`);
+            continue;
+          }
+          
+          // Ensure amount is a valid number string
+          let amount = "0";
+          if (item.amount && !isNaN(parseFloat(item.amount))) {
+            amount = parseFloat(item.amount).toString();
+          }
+          
+          newToTokens.push({
+            id: Date.now() + 100 + newToTokens.length,
+            token: tokenInfo,
+            amount: amount
+          });
+        }
+        
+        if (newToTokens.length > 0) {
+          console.log("Setting toTokens to:", newToTokens);
+          setToTokens(newToTokens);
+        } else {
+          console.error("No valid to tokens found");
+          return;
+        }
+      }
+      
+      setTimeout(() => {
+        handleSwap();
+      }, 100);
+      
+    } catch (error) {
+      console.error("Error processing swap parameters:", error);
+    }
+  }
+
   return (
     <div className="w-3/4 mx-auto p-6 bg-white rounded-2xl shadow-lg border border-gray-200 mt-8">
       <h2 className="text-xl font-bold mb-4 text-center">Swap</h2>
@@ -242,6 +336,9 @@ export default function Swap() {
       >
         Swap
       </button>
+
+      <ChatBubble onSwapWithParams={handleSwapWithParams} />
+      
     </div>
   );
 }
