@@ -7,6 +7,7 @@ import { mul18 } from "~~/components/swap/Utils";
 import { getTokenBySymbol, TokenInfo } from "~~/components/swap/TokenSelector";
 import { Pool } from "~~/app/pool/_components/LiquidityList";
 import ChatBubble from '~~/components/swap/ChatBubble';
+import { findPool } from '~~/utils/swap';
 
 type TokenOrder = {
   id: number,
@@ -30,88 +31,6 @@ export default function GlobalChatBubble() {
       setPools(JSON.parse(storedPools));
     }
   }, []);
-
-  function findPool(tokensIn: string[], tokensOut: string[]): Pool | null {
-    if (!tokensIn || !tokensOut) return null
-    let pool = null;
-    debugger
-    for (let i = 0; i < pools.length; i++) {
-      let findGroupX = false;
-      let findGroupY = false;
-      const addressXs = pools[i].addressXs;
-      const addressYs = pools[i].addressYs;
-      let count = 0;
-      for (let j = 0; j < tokensIn.length; j++) {
-        for (let k = 0; k < addressXs.length; k++) {
-          if (tokensIn[j] === addressXs[k]) {
-            count++;
-            continue;
-          }
-        }
-        if (count === tokensIn.length) {
-          findGroupX = true;
-          break;
-        }
-      }
-      count = 0;
-      for (let j = 0; j < tokensOut.length; j++) {
-        for (let k = 0; k < addressYs.length; k++) {
-          if (tokensOut[j] === addressYs[k]) {
-            count++;
-            continue;
-          }
-        }
-        if (count === tokensOut.length) {
-          findGroupY = true;
-          break;
-        }
-      }
-      if (findGroupX && findGroupY) {
-        pool = pools[i];
-        console.log("find pool: ", pool);
-        return pool;
-      }
-    }
-    debugger
-    for (let i = 0; i < pools.length; i++) {
-      let findGroupX = false;
-      let findGroupY = false;
-      const addressXs = pools[i].addressXs;
-      const addressYs = pools[i].addressYs;
-      let count = 0;
-      for (let j = 0; j < tokensOut.length; j++) {
-        for (let k = 0; k < addressXs.length; k++) {
-          if (tokensOut[j] === addressXs[k]) {
-            count++;
-            continue;
-          }
-        }
-        if (count === tokensOut.length) {
-          findGroupX = true;
-          break;
-        }
-      }
-      count = 0;
-      for (let j = 0; j < tokensIn.length; j++) {
-        for (let k = 0; k < addressYs.length; k++) {
-          if (tokensIn[j] === addressYs[k]) {
-            count++;
-            continue;
-          }
-        }
-        if (count === tokensIn.length) {
-          findGroupY = true;
-          break;
-        }
-      }
-      if (findGroupX && findGroupY) {
-        pool = pools[i];
-        console.log("find pool: ", pool);
-        return pool;
-      }
-    }
-    return pool;
-  }
 
   const handleGlobalSwap = async (params: any) => {
     console.log("Global chat received swap request:", params);
@@ -179,10 +98,10 @@ export default function GlobalChatBubble() {
       const tokensOut = newToTokens.map(token => token.token?.address || '0');
       const amountsIn = newFromTokens.map(token => mul18(token.amount));
       const amountOutsMin = new Array(newFromTokens.length).fill(1);
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600); // 一小时过期
+      const deadline = BigInt(Date.now() * 3600 * 1000);
       
       console.log("Looking for pool with tokens:", tokensIn, tokensOut);
-      const pool = findPool(tokensIn, tokensOut);
+      const pool = findPool(tokensIn, tokensOut, pools);
       
       if (!pool) {
         console.error("No matching pool found");
@@ -207,26 +126,8 @@ export default function GlobalChatBubble() {
       });
       
       console.log("Swap transaction:", tx);
-      
-      // 将执行结果发布为自定义事件，使其他组件可以响应
-      const event = new CustomEvent('global-swap-executed', { 
-        detail: { 
-          success: true, 
-          tx, 
-          fromTokens: newFromTokens, 
-          toTokens: newToTokens 
-        } 
-      });
-      window.dispatchEvent(event);
-      
     } catch (error) {
       console.error("Error executing swap:", error);
-      
-      // 发布失败事件
-      const event = new CustomEvent('global-swap-executed', { 
-        detail: { success: false, error } 
-      });
-      window.dispatchEvent(event);
     }
   };
   

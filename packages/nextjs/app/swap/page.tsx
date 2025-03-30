@@ -9,6 +9,7 @@ import { mul18 } from "~~/components/swap/Utils";
 import { Pool } from "../pool/_components/LiquidityList";
 import { useRouter } from "next/navigation";
 import Decimal from "decimal.js";
+import { findPool } from "~~/utils/swap";
 
 type TokenOrder = {
   id: number,
@@ -67,7 +68,7 @@ export default function Swap() {
     const amountOutsMin = new Array(fromTokens.length).fill(1);
     const deadline = BigInt(Date.now() * 3600 * 1000);
   
-    const pool = findPool(tokensIn, tokensOut);
+    const pool = findPool(tokensIn, tokensOut, pools);
     debugger
     if (!pool) return;
     const groupIn = pool.addressXs.map(address => address || '0');
@@ -79,88 +80,6 @@ export default function Swap() {
     });
     console.log("swap tx: ", tx);
     router.refresh();
-  }
-
-  function findPool(tokensIn: string[], tokensOut: string[]): Pool | null {
-    if (!tokensIn || !tokensOut) return null
-    let pool = null;
-    debugger
-    for (let i = 0; i < pools.length; i++) {
-      let findGroupX = false;
-      let findGroupY = false;
-      const addressXs = pools[i].addressXs;
-      const addressYs = pools[i].addressYs;
-      let count = 0;
-      for (let j = 0; j < tokensIn.length; j++) {
-        for (let k = 0; k < addressXs.length; k++) {
-          if (tokensIn[j] === addressXs[k]) {
-            count++;
-            continue;
-          }
-        }
-        if (count === tokensIn.length) {
-          findGroupX = true;
-          break;
-        }
-      }
-      count = 0;
-      for (let j = 0; j < tokensOut.length; j++) {
-        for (let k = 0; k < addressYs.length; k++) {
-          if (tokensOut[j] === addressYs[k]) {
-            count++;
-            continue;
-          }
-        }
-        if (count === tokensOut.length) {
-          findGroupY = true;
-          break;
-        }
-      }
-      if (findGroupX && findGroupY) {
-        pool = pools[i];
-        console.log("find pool: ", pool);
-        return pool;
-      }
-    }
-    debugger
-    for (let i = 0; i < pools.length; i++) {
-      let findGroupX = false;
-      let findGroupY = false;
-      const addressXs = pools[i].addressXs;
-      const addressYs = pools[i].addressYs;
-      let count = 0;
-      for (let j = 0; j < tokensOut.length; j++) {
-        for (let k = 0; k < addressXs.length; k++) {
-          if (tokensOut[j] === addressXs[k]) {
-            count++;
-            continue;
-          }
-        }
-        if (count === tokensOut.length) {
-          findGroupX = true;
-          break;
-        }
-      }
-      count = 0;
-      for (let j = 0; j < tokensIn.length; j++) {
-        for (let k = 0; k < addressYs.length; k++) {
-          if (tokensIn[j] === addressYs[k]) {
-            count++;
-            continue;
-          }
-        }
-        if (count === tokensIn.length) {
-          findGroupY = true;
-          break;
-        }
-      }
-      if (findGroupX && findGroupY) {
-        pool = pools[i];
-        console.log("find pool: ", pool);
-        return pool;
-      }
-    }
-    return pool;
   }
 
   return (
