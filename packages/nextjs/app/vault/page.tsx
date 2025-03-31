@@ -6,7 +6,6 @@ import { ERC20ABI } from "~~/components/swap/Abi";
 import { getTokenBySymbol } from "~~/components/swap/TokenSelector";
 import externalContracts from "~~/contracts/externalContracts";
 import { useScaffoldEventHistory, useScaffoldReadContract, useScaffoldWatchContractEvent, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
-import { heuristRequest } from "~~/utils/http";
 import axios from 'axios';
 import { get_trending_coins } from "~~/utils/mcpMock";
 import { Pool } from "../pool/_components/LiquidityList";

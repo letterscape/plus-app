@@ -103,16 +103,16 @@ export default function CreateLiquidity() {
           args: [externalContracts[1].Swaplus.address, BigInt(Number.MAX_SAFE_INTEGER * 10**18)]
         })
       }
-      // const tx = await writeSwapContractAsync({
-      //   functionName: "addLiquidity",
-      //   args: [groupA, groupB, amountsADesired, amountsBDesired, amountsAMin, amountsBMin, account.address, deadline],
-      // });
-      const tx = await writeContractAsync({
-        abi: externalContracts[1].Swaplus.abi,
-        address: externalContracts[1].Swaplus.address,
+      const tx = await writeSwapContractAsync({
         functionName: "addLiquidity",
         args: [groupA, groupB, amountsADesired, amountsBDesired, amountsAMin, amountsBMin, account.address, deadline],
       });
+      // const tx = await writeContractAsync({
+      //   abi: externalContracts[1].Swaplus.abi,
+      //   address: externalContracts[1].Swaplus.address,
+      //   functionName: "addLiquidity",
+      //   args: [groupA, groupB, amountsADesired, amountsBDesired, amountsAMin, amountsBMin, account.address, deadline],
+      // });
       console.log("addLiquidity tx: ", tx);
       router.push("/pool");
       router.refresh();
