@@ -7,6 +7,7 @@ import { useAccount, useReadContract, UseReadContractParameters, useReadContract
 import externalContracts from "~~/contracts/externalContracts";
 import { SwapPoolABI } from "~~/components/swap/Abi";
 import { getTokenByAddress } from "~~/components/swap/TokenSelector";
+import Decimal from "decimal.js";
 
 export type Pool = {
   logoXs: (string | undefined)[],
@@ -183,10 +184,10 @@ function processTokenInfo(groupX: string[], groupY: string[]): Pool | null {
     symbolYs: symbolYs, 
     addressYs:groupY, 
     numYs:[], 
-    tvl: "35.81M",
-    apr: "7.3%", 
-    _1Dvol: "831.7K",
-    _30Dvol: "89.5M",
+    tvl: "35.81",
+    apr: "7.3", 
+    _1Dvol: "23.7",
+    _30Dvol: "5.5",
   }
   return pool;
 }
@@ -230,7 +231,7 @@ const LiquidityList = () => {
 
   const groupXContracts: UseReadContractParameters[] = Array.from({ length: Number(poolsLength) }, (_, i) =>
     { 
-      if (!pools) return {}
+      if (!pools || !pools[i]) return {}
       return {
         abi: SwapPoolABI,
         address: pools[i].result as string,
@@ -248,7 +249,7 @@ const LiquidityList = () => {
 
   const groupYContracts: UseReadContractParameters[] = Array.from({ length: Number(poolsLength) }, (_, i) =>
     { 
-      if (!pools) return {}
+      if (!pools || !pools[i]) return {}
       return {
         abi: SwapPoolABI,
         address: pools[i].result as string,
@@ -266,7 +267,7 @@ const LiquidityList = () => {
   
   const groupXLengthContracts: UseReadContractParameters[] = Array.from({ length: Number(poolsLength) }, (_, i) =>
     { 
-      if (!pools) return {}
+      if (!pools || !pools[i]) return {}
       return {
         abi: SwapPoolABI,
         address: pools[i].result as string,
@@ -284,7 +285,7 @@ const LiquidityList = () => {
 
   const groupYLengthContracts: UseReadContractParameters[] = Array.from({ length: Number(poolsLength) }, (_, i) =>
     { 
-      if (!pools) return {}
+      if (!pools || !pools[i]) return {}
       return {
         abi: SwapPoolABI,
         address: pools[i].result as string,
@@ -350,7 +351,7 @@ const LiquidityList = () => {
                           src={logo}/>
                       ))}
                     </div>
-                    <div className="flex">
+                    <div className="flex col-span-3">
                       {item.symbolXs.join(' / ')}
                     </div>
                   </div>
@@ -364,15 +365,15 @@ const LiquidityList = () => {
                           src={logo}/>
                       ))}
                     </div>
-                    <div className="flex">
+                    <div className="flex col-span-3">
                       {item.symbolYs.join(' / ')}
                     </div>
                   </div>
                 </td>
-                <td>${item.tvl}</td>
-                <td>{item.apr}</td>
-                <td>${item._1Dvol}</td>
-                <td>${item._30Dvol}</td>
+                <td>${Decimal(item.tvl).mul(index + 1).toString()}M</td>
+                <td>{Decimal(item.apr).add(Decimal(index).mul(0.7)).toString()}%</td>
+                <td>${Decimal(item._1Dvol).mul(index + 1).toString()}K</td>
+                <td>${Decimal(item._30Dvol).mul(index + 1).toString()}M</td>
               </tr>
             ))}
           </tbody>

@@ -1,56 +1,197 @@
 'use client'
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAccount, useWriteContract } from "wagmi";
+import { ERC20ABI } from "~~/components/swap/Abi";
+import { getTokenBySymbol } from "~~/components/swap/TokenSelector";
+import externalContracts from "~~/contracts/externalContracts";
+import { useScaffoldEventHistory, useScaffoldReadContract, useScaffoldWatchContractEvent, useScaffoldWriteContract } from "~~/hooks/scaffold-eth";
+import { heuristRequest } from "~~/utils/http";
+import axios from 'axios';
+import { get_trending_coins } from "~~/utils/mcpMock";
+import { Pool } from "../pool/_components/LiquidityList";
+import { addSignleLiquidityParams, findPool, findPoolByToken } from "~~/utils/swap";
+import { mul18 } from "~~/components/swap/Utils";
 
 const Vault = () => {
-  const [balance, setBalance] = useState(100); // 初始余额 100
+  const [balance, setBalance] = useState('0');
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false);
   const [depositAmount, setDepositAmount] = useState("");
   const [isProcessModalOpen, setIsProcessModalOpen] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("Waiting for deposit...");
   const [hotTokens, setHotTokens] = useState<string[]>([]);
+  const [pools, setPools] = useState<Pool[]>(() => {
+    const isBrowser = typeof window !== "undefined";
+    if (!isBrowser) {
+      return [];
+    }
+    const pools = localStorage.getItem("pools");
+    return pools && pools !== "undefined" ? JSON.parse(pools) : [];
+  });
 
+  const { writeContractAsync } = useWriteContract();
+  const { writeContractAsync: writeVaultContractAsync } = useScaffoldWriteContract({ contractName: "Vault" });
+  const account = useAccount();
 
+  const { data: balanceData } = useScaffoldReadContract({
+    contractName: "Vault",
+    functionName: "balanceOf",
+    args: [account.address],
+  });
+  useEffect(() => {
+    if (balanceData) {
+      setBalance(balanceData.toString());
+    }
+  }, [balanceData])
+  
   const handleDeposit = async () => {
     setIsDepositModalOpen(true);
   };
 
-  const confirmDeposit = () => {
+  const confirmDeposit = async () => {
     setHotTokens([]);
     setIsDepositModalOpen(false);
+   
+    const txApprove = await writeContractAsync({
+      abi: ERC20ABI,
+      address: getTokenBySymbol("USDT")?.address || "",
+      functionName: 'approve',
+      args: [externalContracts[1].Vault.address, BigInt(Number.MAX_SAFE_INTEGER * 10**18)]
+    })
+    // const txDeposit = await writeVaultContractAsync({
+    //   functionName: "deposit",
+    //   args: [BigInt(depositAmount)],
+    // });
+    const txDeposit = await writeContractAsync({
+      abi: externalContracts[1].Vault.abi,
+      address: externalContracts[1].Vault.address,
+      functionName: 'deposit',
+      args: [BigInt(depositAmount)],
+    })
     setIsProcessModalOpen(true);
     setProgress(0);
     setStatusText("Depositing funds...");
-    smoothIncrease(20);
 
     setTimeout(async () => {
-      setBalance(balance + Number(depositAmount));
+      // setBalance(String(Number(balance) + Number(depositAmount)));
       setStatusText("Fetching trending tokens...");
+      smoothIncrease(25);
+
+      const symbols = fetchTrendingTokens();
+      setHotTokens(symbols);
+      setStatusText("Analyzing tokens...");
       smoothIncrease(50);
 
-      const tokens = await fetchTrendingTokens();
-      setHotTokens(tokens);
-      setStatusText("Analyzing tokens...");
-      smoothIncrease(75);
-
-      setTimeout(() => {
+      setTimeout(async () => {
         setStatusText("Adding liquidity...");
+        smoothIncrease(70);
+        debugger
+        const pool = findPoolByToken(symbols[0], pools);
+        if (!pool) {
+          setIsProcessModalOpen(false);
+          return;
+        }
+        const params = addSignleLiquidityParams(depositAmount, pool);
+        const tx = await writeVaultContractAsync({
+          functionName: "addLiquidity",
+          args: [params.groupA, params.groupB, params.amountsADesired, params.amountsBDesired, params.amountsAMin, params.amountsBMin, account.address, BigInt(Date.now() * 3600 * 1000)],
+        });
+        console.log("addLiquidity tx: ", tx);
         smoothIncrease(90);
-
         setTimeout(() => {
-          setStatusText("Liquidity added successfully!");
           smoothIncrease(100);
+          setStatusText("Liquidity added successfully!");
         }, 1500);
       }, 2000);
     }, 2000);
+    smoothIncrease(20);
+    
+    
     setDepositAmount("0");
   };
 
-  const fetchTrendingTokens = async (): Promise<string[]> => {
-    return new Promise((resolve) =>
-      setTimeout(() => resolve(["$ETH", "$BTC", "$SOL", "$DOGE"]), 2000)
-    );
+  // useScaffoldWatchContractEvent({
+  //   contractName: "Vault",
+  //   eventName: "Deposit",onLogs: logs => {
+  //     debugger
+  //     logs.map(log => {
+  //       debugger
+  //       const { user, amount } = log.args;
+  //       console.log("📡 Deposit event", user, amount);
+  //       setIsProcessModalOpen(true);
+  //       setProgress(0);
+  //       setTimeout(async () => {
+  //         debugger
+  //         setBalance(balance + Number(depositAmount));
+  //         setStatusText("Fetching trending tokens...");
+  //         smoothIncrease(50);
+    
+  //         const tokens = await fetchTrendingTokens();
+  //         setHotTokens(tokens);
+  //         setStatusText("Analyzing tokens...");
+  //         smoothIncrease(75);
+    
+  //         setTimeout(() => {
+  //           setStatusText("Adding liquidity...");
+  //           smoothIncrease(90);
+    
+  //           setTimeout(() => {
+  //             setStatusText("Liquidity added successfully!");
+  //             smoothIncrease(100);
+  //           }, 1500);
+  //         }, 2000);
+  //       }, 2000);
+  //     });
+  //   },
+  // });
+
+  // const {
+  //   data: events,
+  //   isLoading: isLoadingEvents,
+  //   error: errorReadingEvents,
+  // } = useScaffoldEventHistory({
+  //   contractName: "Vault",
+  //   eventName: "Deposit",
+  //   fromBlock: 22150000n,
+  //   watch: true,
+  //   // filters: { greetingSetter: "0x9eB2C4866aAe575bC88d00DE5061d5063a1bb3aF" },
+  //   blockData: true,
+  //   transactionData: true,
+  //   receiptData: true,
+  // });
+  // console.log("deposit events: ", events);
+
+  async function getTrendingCoins() {
+    try {
+      const response = await axios.post(
+        'https://sequencer-v2.heurist.xyz/mesh_request', 
+        {
+          agent_id: "CoinGeckoTokenInfoAgent",
+          input: {
+            tool: "get_trending_coins",
+            raw_data_only: true,
+          },
+          api_key: "0x17f3938e50586af3d31a4de3264a7203e0008ffa-04b6d7f27798767"
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      console.log('Trending Coins:', response.data);
+      debugger
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching trending coins:', error);
+    }
+  }
+  const fetchTrendingTokens = (): string[] => {
+    // const resp = await fetchHeurist("get_trending_coins", "ElfaTwitterIntelligenceAgent");
+    const resp = get_trending_coins;
+    const symbols: string[] = resp.data.trending_coins.map(coin => coin.symbol);
+    return symbols;
   };
 
   // 让进度条平滑增加
@@ -67,8 +208,8 @@ const Vault = () => {
   };
 
   const handleWithdraw = () => {
-    if (balance >= 10) {
-      setBalance(balance - 10); // 假设每次取出 10
+    if (Number(balance) >= 10) {
+      setBalance(String(Number(balance) - 10)); // 假设每次取出 10
     }
   };
 

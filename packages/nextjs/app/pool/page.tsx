@@ -8,14 +8,14 @@ import Link from "next/link";
 export default function Pool() {
 
   return (
-    <div className="w-4/5 mx-auto">
+    <div className="w-4/5 mx-auto mt-10">
       <div>
         <Link href="/pool/create">
-          <button className="btn btn-neutral btn-sm">+ Create Liquidity</button>
+          <button className="btn btn-neutral btn-sm">+ Add Liquidity</button>
         </Link>
       </div>
-      <div>
-        <span>pools</span>
+      <div className="mt-8">
+        {/* <span className="mt-8 mb-4 mx-8 inline-block">pools</span> */}
         <LiquidityList />
       </div>
     </div>

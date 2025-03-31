@@ -132,6 +132,39 @@ export default function ChatBubble({ onSwapWithParams }: ChatBubbleProps) {
           timestamp: new Date()
         }
         setMessages(prev => [...prev, aiMessage])
+      } else if (
+        inputText.includes('social') || 
+        inputText.includes('twitter') || 
+        inputText.includes('talk')
+      ) {
+        if (!process.env.NEXT_PUBLIC_HEURIST_API_KEY) {
+          console.error("Missing API key: Ensure NEXT_PUBLIC_HEURIST_API_KEY is set in your environment variables.");
+          return;
+        }
+        try {
+          const data = await fetchHeurist(inputText, "ElfaTwitterIntelligenceAgent");
+          console.log("Response:", data);
+
+          let responseText = data?.response || "No response data";
+
+          const aiMessage: Message = {
+            id: Date.now() + 1,
+            text: responseText,
+            isUser: false,
+            timestamp: new Date(),
+            isMarkdown: true
+          };
+          setMessages(prev => [...prev, aiMessage]);
+        } catch (err) {
+          console.error("API Error:", err);
+          const aiMessage: Message = {
+            id: Date.now() + 1,
+            text: "Sorry, I couldn't fetch the information. Please try again later.",
+            isUser: false,
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, aiMessage]);
+        }
       } else {
         // real ai response
         if (!process.env.NEXT_PUBLIC_HEURIST_API_KEY) {
@@ -139,7 +172,7 @@ export default function ChatBubble({ onSwapWithParams }: ChatBubbleProps) {
           return;
         }
         try {
-          const data = await fetchHeurist(inputText);
+          const data = await fetchHeurist(inputText, "CoinGeckoTokenInfoAgent");
           console.log("Response:", data);
 
           let responseText = data?.response || "No response data";

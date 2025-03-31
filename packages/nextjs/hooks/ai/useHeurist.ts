@@ -4,7 +4,7 @@ export const useHeurist = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchHeurist = async (query: string) => {
+  const fetchHeurist = async (query: string, agent_id: string) => {
     setLoading(true);
     try {
       const response = await fetch("/api/heurist-proxy", {
@@ -14,7 +14,7 @@ export const useHeurist = () => {
           "Authorization": `Bearer ${process.env.NEXT_PUBLIC_HEURIST_API_KEY}`
         },
         body: JSON.stringify({
-          agent_id: "CoinGeckoTokenInfoAgent",
+          agent_id: agent_id,
           input: { query, raw_data_only: false }
         })
       });

@@ -14,7 +14,8 @@ import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 const externalContracts = {
   1: {
     Swaplus: {
-      address: "0x832092FDF1D32A3A1b196270590fB0E25DF129FF",
+      address: "0xC6A09F78CfB85275e5261200442b0B9AA9D4D0ce", //dev
+      // address: "0x2044E2869D5E8b464d1282afa483F3DB240ecD44", //testnet
       abi: [
         {
           "type": "constructor",
@@ -222,7 +223,8 @@ const externalContracts = {
       ]      
     },
     PoolFactory: {
-      address: "0x67832b9Fc47eb3CdBF7275b95a29740EC58193D2",
+      address: "0x97915c43511f8cB4Fbe7Ea03B96EEe940eC4AF12", //dev
+      // address: "0x13e744214f9288a79246fD1bAcd5C64AD19FD124",
       abi: [
         {
           "type": "function",
@@ -391,6 +393,11 @@ const externalContracts = {
           "anonymous": false
         }
       ]
+    },
+    Vault: {
+      address: "0x77e6Bd5c1988d8d766698F9CeEa5C24559b999f8", //dev
+      // address: "0x764bBfF7aD16E3A7dB4A773643c306DF0898242e", //testnet
+      abi: [{"type":"function","name":"addLiquidity","inputs":[{"name":"groupA","type":"address[]","internalType":"address[]"},{"name":"groupB","type":"address[]","internalType":"address[]"},{"name":"amountsADesired","type":"uint256[]","internalType":"uint256[]"},{"name":"amountsBDesired","type":"uint256[]","internalType":"uint256[]"},{"name":"amountsAMin","type":"uint256[]","internalType":"uint256[]"},{"name":"amountsBMin","type":"uint256[]","internalType":"uint256[]"},{"name":"to","type":"address","internalType":"address"},{"name":"deadline","type":"uint256","internalType":"uint256"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"function","name":"balanceOf","inputs":[{"name":"user","type":"address","internalType":"address"}],"outputs":[{"name":"","type":"uint256","internalType":"uint256"}],"stateMutability":"view"},{"type":"function","name":"deposit","inputs":[{"name":"amount","type":"uint256","internalType":"uint256"}],"outputs":[{"name":"","type":"bool","internalType":"bool"}],"stateMutability":"nonpayable"},{"type":"function","name":"poolsOf","inputs":[{"name":"account","type":"address","internalType":"address"}],"outputs":[{"name":"","type":"address[]","internalType":"address[]"}],"stateMutability":"view"},{"type":"function","name":"withdraw","inputs":[{"name":"amount","type":"uint256","internalType":"uint256"}],"outputs":[],"stateMutability":"nonpayable"},{"type":"event","name":"Deposit","inputs":[{"name":"user","type":"address","indexed":true,"internalType":"address"},{"name":"amount","type":"uint256","indexed":false,"internalType":"uint256"}],"anonymous":false},{"type":"event","name":"Withdrawal","inputs":[{"name":"user","type":"address","indexed":true,"internalType":"address"},{"name":"amount","type":"uint256","indexed":false,"internalType":"uint256"}],"anonymous":false}]
     },
     PEPE: {
       address: "0xa86582Ad5E80abc19F95f8A9Fb3905Cda0dAbd59",

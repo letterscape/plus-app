@@ -1,5 +1,5 @@
 import * as chains from "viem/chains";
-import { local } from "./utils/scaffold-eth/chains";
+import { bsc_testnet, local } from "./utils/scaffold-eth/chains";
 
 export type ScaffoldConfig = {
   targetNetworks: readonly chains.Chain[];
@@ -14,7 +14,7 @@ export const DEFAULT_ALCHEMY_API_KEY = "oKxs-03sij-U_N0iOlrSsZFr29-IqbuF";
 
 const scaffoldConfig = {
   // The networks on which your DApp is live
-  targetNetworks: [chains.mainnet, chains.sepolia, local],
+  targetNetworks: [chains.mainnet, chains.sepolia, local, bsc_testnet],
 
   // The interval at which your front-end polls the RPC servers for new data
   // it has no effect if you only target the local network (default is 4000)
@@ -32,6 +32,7 @@ const scaffoldConfig = {
     // Example:
     // [chains.mainnet.id]: "https://mainnet.buidlguidl.com",
     [local.id]: "http://127.0.0.1:8545",
+    [bsc_testnet.id]: "https://data-seed-prebsc-1-s1.bnbchain.org:8545"
   },
 
   // This is ours WalletConnect's default project ID.

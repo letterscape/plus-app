@@ -11,6 +11,7 @@ import { parseEther } from "viem";
 import externalContracts from "~~/contracts/externalContracts";
 import { mul18 } from "~~/components/swap/Utils";
 import Decimal from "decimal.js";
+import { useRouter } from "next/navigation";
 
 type LiquidityToken = {
   id: number,
@@ -22,8 +23,9 @@ export default function CreateLiquidity() {
   const [tokensX, setTokensX] = useState<LiquidityToken[]>([{ id: 1, token: null, amount: "" }]);
   const [tokensY, setTokensY] = useState<LiquidityToken[]>([{ id: 1, token: null, amount: "" }]);
   const { writeContract: writeSwapContract, writeContractAsync: writeSwapContractAsync } = useScaffoldWriteContract({ contractName: "Swaplus" });
+  const router = useRouter();
   const account = useAccount();
-  const { writeContract, writeContractAsync } = useWriteContract();
+  const { writeContractAsync } = useWriteContract();
 
   // 处理 Token 增加
   const addToken = (setTokens: Function) => {
@@ -83,7 +85,6 @@ export default function CreateLiquidity() {
       const amountsAMin = new Array(groupA.length).fill(1);
       const amountsBMin = new Array(groupB.length).fill(1);
       const deadline = BigInt(Date.now() * 3600 * 1000);
-      debugger
       for (let i = 0; i < groupA.length; i++) {
         const tx = await writeContractAsync({
           abi: ERC20ABI,
@@ -94,7 +95,6 @@ export default function CreateLiquidity() {
         console.log("approve tx: ", tx);
         
       }
-      debugger
       for (let i = 0; i < groupB.length; i++) {
         const tx = await writeContractAsync({
           abi: ERC20ABI,
@@ -103,12 +103,19 @@ export default function CreateLiquidity() {
           args: [externalContracts[1].Swaplus.address, BigInt(Number.MAX_SAFE_INTEGER * 10**18)]
         })
       }
-      debugger
-      const tx = await writeSwapContractAsync({
+      // const tx = await writeSwapContractAsync({
+      //   functionName: "addLiquidity",
+      //   args: [groupA, groupB, amountsADesired, amountsBDesired, amountsAMin, amountsBMin, account.address, deadline],
+      // });
+      const tx = await writeContractAsync({
+        abi: externalContracts[1].Swaplus.abi,
+        address: externalContracts[1].Swaplus.address,
         functionName: "addLiquidity",
         args: [groupA, groupB, amountsADesired, amountsBDesired, amountsAMin, amountsBMin, account.address, deadline],
       });
       console.log("addLiquidity tx: ", tx);
+      router.push("/pool");
+      router.refresh();
     } catch (e) {
       console.error("Error setting greeting:", e);
     }
